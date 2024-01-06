@@ -1,0 +1,48 @@
+/*
+ * timer.c
+ *
+ *  Created on: Oct 13, 2022
+ *      Author: khaled
+ */
+#include "timer.h"
+#include "math.h"
+//FUNCTION TO INITIALIZE TIMER 0
+EN_TIMER0_error_t TIMER0_init(void){
+	//USING TIMER0 IN NORMAL MODE
+	TCCR0 = 0X00;
+	//SET TCCR0 BIT0 AND BIT 1 TO 1 TO SELECT PRESCALER 64
+	SET_BIT(TCCR0, BIT0);
+	SET_BIT(TCCR0, BIT1);
+	return TIMER0_OK;
+}
+//FUNCTION TO GENERATE DELAY
+EN_TIMER0_error_t TIMER0_delay(int16_t SECONDS){
+	if(SECONDS > 0){
+		//SET TCCR0 BIT0 AND BIT 1 TO 1 TO SELECT PRESCALER 64
+		SET_BIT(TCCR0, BIT0);
+		SET_BIT(TCCR0, BIT1);
+		//CALCULATING NUMBER OF OVERFLOWS = CEIL(REQUIRED_DELAY/MAXIMUM_DELAY)
+		uint32_t numberOfOverflows = ceil(SECONDS/MAX_DELAY);
+		//CALCULATING TCNT0 INITIAL VALUE = 2^N - ((REQUIRED_DELAY/TIMERTICK)/NUMBER_OVERFLOWS)
+		TCNT0 = 256 - ((SECONDS/TIMER_TICK)/numberOfOverflows);
+		//CREATING VARIABLE TO COUNT NUMBER OF OVERFLOWS
+		uint32_t counter = 0;
+		while(counter < numberOfOverflows){
+			//CHECK IF TIMER 0 OVERFLOW FLAG IS SET
+			while(GET_BIT(TIFR, BIT0)==0);
+			//CLEAR TIMER 0 OVERFLOW FLAG
+			SET_BIT(TIFR, BIT0);
+			TCNT0 = 0;
+			counter++;
+		}
+		//RESET OVERFLOW COUNTER
+		counter = 0;
+		//STOP TIMER
+		TCCR0 = 0x00;
+		return TIMER0_OK;
+	}
+	else{
+		return TIMER0_WRONG_DELAY;
+	}
+}
+
